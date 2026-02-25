@@ -36,11 +36,26 @@ async function ensureSeeded() {
   await col.insertMany(docs);
 }
 
+// Timer screen — only enabled services
 export async function getServices(): Promise<ServicesResponse> {
   await ensureSeeded();
   const col = await getServicesCollection();
-  const docs = await col.find({}).sort({ sortOrder: 1 }).toArray();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const docs = await col.find({ enabled: { $ne: false } } as any).sort({ sortOrder: 1 }).toArray();
   return { services: docs.map(docToService) };
+}
+
+// Dashboard — all services including disabled
+export async function getAllServices(): Promise<{ services: (Service & { enabled: boolean })[] }> {
+  await ensureSeeded();
+  const col = await getServicesCollection();
+  const docs = await col.find({}).sort({ sortOrder: 1 }).toArray();
+  return {
+    services: docs.map((doc) => ({
+      ...docToService(doc),
+      enabled: doc.enabled !== false,
+    })),
+  };
 }
 
 export async function getServiceById(id: string): Promise<Service | null> {

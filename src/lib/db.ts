@@ -11,6 +11,7 @@ export interface ServiceDoc {
   name: string;
   tagline: string;
   sortOrder: number;
+  enabled?: boolean;
   subServices: SubServiceDoc[];
 }
 

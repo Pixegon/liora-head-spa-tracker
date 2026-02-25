@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { getServices } from "@/lib/api";
+import { getAllServices } from "@/lib/api";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 import PinGate from "@/components/dashboard/PinGate";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const { services } = await getServices();
+  const { services } = await getAllServices();
 
   return (
     <div className="min-h-screen bg-spa-bg">

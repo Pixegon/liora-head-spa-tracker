@@ -6,6 +6,7 @@ import {
   createService,
   updateService,
   deleteService,
+  toggleService,
   moveService,
   createSubService,
   updateSubService,
@@ -259,7 +260,7 @@ function PinChangeForm() {
 // ── Main Component ────────────────────────────────────────────────────
 
 interface Props {
-  services: Service[];
+  services: (Service & { enabled: boolean })[];
 }
 
 export default function DashboardClient({ services }: Props) {
@@ -289,7 +290,9 @@ export default function DashboardClient({ services }: Props) {
       {services.map((service, idx) => (
         <div
           key={service.id}
-          className="rounded-2xl border border-spa-border bg-white overflow-hidden"
+          className={`rounded-2xl border bg-white overflow-hidden transition-opacity ${
+            service.enabled ? "border-spa-border" : "border-spa-border opacity-50"
+          }`}
         >
           {/* ── Service header ── */}
           {editingServiceId === service.id ? (
@@ -311,9 +314,16 @@ export default function DashboardClient({ services }: Props) {
           ) : (
             <div className="flex items-start justify-between px-5 py-4">
               <div className="min-w-0 mr-4">
-                <h2 className="text-lg font-semibold text-spa-text leading-tight">
-                  {service.name}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-spa-text leading-tight">
+                    {service.name}
+                  </h2>
+                  {!service.enabled && (
+                    <span className="text-xs font-medium text-spa-muted bg-spa-surface border border-spa-border rounded px-1.5 py-0.5">
+                      Hidden
+                    </span>
+                  )}
+                </div>
                 {service.tagline && (
                   <p className="text-sm text-spa-muted mt-0.5">{service.tagline}</p>
                 )}
@@ -334,6 +344,13 @@ export default function DashboardClient({ services }: Props) {
                   title="Move down"
                 >
                   ↓
+                </button>
+                <button
+                  className={btnGhost}
+                  disabled={isPending}
+                  onClick={() => run(() => toggleService(service.id))}
+                >
+                  {service.enabled ? "Hide" : "Show"}
                 </button>
                 <button
                   className={btnGhost}

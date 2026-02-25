@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Service } from "@/lib/types";
 import ServiceGrid from "@/components/ServiceGrid";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface SelectionViewProps {
   services: Service[];
@@ -23,6 +24,7 @@ export default function SelectionView({ services }: SelectionViewProps) {
             Select Service
           </h1>
         </div>
+        <ThemeToggle />
       </div>
 
       {/* Service grid */}

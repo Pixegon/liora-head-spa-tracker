@@ -44,6 +44,15 @@ export async function deleteService(id: string) {
   refresh();
 }
 
+export async function toggleService(id: string) {
+  const col = await getServicesCollection();
+  const service = await col.findOne({ _id: id });
+  if (!service) return;
+  const currentEnabled = service.enabled !== false;
+  await col.updateOne({ _id: id }, { $set: { enabled: !currentEnabled } });
+  refresh();
+}
+
 export async function moveService(id: string, direction: "up" | "down") {
   const col = await getServicesCollection();
   const all = await col.find({}).sort({ sortOrder: 1 }).toArray();

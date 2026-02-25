@@ -3,14 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --color-bg:          #FDFAF6;
-  --color-surface:     #F5F0E8;
-  --color-border:      #E8E0D0;
-  --color-text:        #1A1614;
-  --color-muted:       #8C7E72;
-  --color-accent:      #9C6B4E;
-  --color-accent-light:#F0E4D8;
-  --color-ring-track:  #EDE5DC;
+  --color-bg:          253 250 246;
+  --color-surface:     245 240 232;
+  --color-border:      232 224 208;
+  --color-text:        26 22 20;
+  --color-muted:       140 126 114;
+  --color-accent:      156 107 78;
+  --color-accent-light:240 228 216;
+  --color-ring-track:  237 229 220;
+}
+
+html.dark {
+  --color-bg:          28 25 23;
+  --color-surface:     41 37 36;
+  --color-border:      68 64 60;
+  --color-text:        250 250 249;
+  --color-muted:       168 162 158;
+  --color-accent:      196 134 106;
+  --color-accent-light:61 37 21;
+  --color-ring-track:  41 37 36;
 }
 
 * {
@@ -19,8 +30,8 @@
 
 html,
 body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-text));
   overscroll-behavior: none;
   touch-action: manipulation;
 }

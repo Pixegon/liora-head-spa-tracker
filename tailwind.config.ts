@@ -10,14 +10,14 @@ const config: Config = {
     extend: {
       colors: {
         spa: {
-          bg:          "#FDFAF6",
-          surface:     "#F5F0E8",
-          border:      "#E8E0D0",
-          text:        "#1A1614",
-          muted:       "#8C7E72",
-          accent:      "#9C6B4E",
-          accentLight: "#F0E4D8",
-          ringTrack:   "#EDE5DC",
+          bg:          "rgb(var(--color-bg) / <alpha-value>)",
+          surface:     "rgb(var(--color-surface) / <alpha-value>)",
+          border:      "rgb(var(--color-border) / <alpha-value>)",
+          text:        "rgb(var(--color-text) / <alpha-value>)",
+          muted:       "rgb(var(--color-muted) / <alpha-value>)",
+          accent:      "rgb(var(--color-accent) / <alpha-value>)",
+          accentLight: "rgb(var(--color-accent-light) / <alpha-value>)",
+          ringTrack:   "rgb(var(--color-ring-track) / <alpha-value>)",
         },
       },
       fontFamily: {
