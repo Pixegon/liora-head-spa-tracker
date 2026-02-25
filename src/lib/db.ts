@@ -36,3 +36,13 @@ export async function getServicesCollection(): Promise<Collection<ServiceDoc>> {
   const client = await clientPromise;
   return client.db("liora").collection<ServiceDoc>("services");
 }
+
+export interface SettingsDoc {
+  _id: string;
+  dashboardPin: string;
+}
+
+export async function getSettingsCollection(): Promise<Collection<SettingsDoc>> {
+  const client = await clientPromise;
+  return client.db("liora").collection<SettingsDoc>("settings");
+}

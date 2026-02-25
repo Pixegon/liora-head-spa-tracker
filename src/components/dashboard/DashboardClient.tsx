@@ -11,6 +11,7 @@ import {
   updateSubService,
   deleteSubService,
   moveSubService,
+  updatePin,
 } from "@/lib/actions";
 
 // ── Shared styles ─────────────────────────────────────────────────────
@@ -210,6 +211,48 @@ function ServiceForm({
         </button>
       </div>
     </form>
+  );
+}
+
+// ── PinChangeForm ─────────────────────────────────────────────────────
+
+function PinChangeForm() {
+  const [newPin, setNewPin] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSave = () => {
+    if (!/^\d{4}$/.test(newPin)) return;
+    startTransition(async () => {
+      await updatePin(newPin);
+      setNewPin("");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="password"
+        inputMode="numeric"
+        maxLength={4}
+        value={newPin}
+        onChange={(e) => {
+          setNewPin(e.target.value.replace(/\D/g, ""));
+          setSaved(false);
+        }}
+        placeholder="New 4-digit PIN"
+        className={`${inputCls} w-36 text-center tracking-widest font-mono`}
+      />
+      <button
+        onClick={handleSave}
+        disabled={newPin.length !== 4 || isPending}
+        className={btnPrimary}
+      >
+        {saved ? "Saved!" : "Save PIN"}
+      </button>
+    </div>
   );
 }
 
@@ -415,6 +458,14 @@ export default function DashboardClient({ services }: Props) {
           + Add Service
         </button>
       )}
+
+      {/* ── PIN ── */}
+      <div className="mt-12 pt-8 border-t border-spa-border">
+        <h2 className="text-sm font-medium text-spa-muted uppercase tracking-widest mb-4">
+          Dashboard PIN
+        </h2>
+        <PinChangeForm />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServices } from "@/lib/api";
 import DashboardClient from "@/components/dashboard/DashboardClient";
+import PinGate from "@/components/dashboard/PinGate";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-spa-bg">
+      <PinGate />
       <div className="max-w-3xl mx-auto px-6 py-10 md:px-10 md:py-14">
         {/* Header */}
         <div className="flex items-start justify-between mb-10">

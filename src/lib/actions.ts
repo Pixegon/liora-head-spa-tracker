@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServicesCollection } from "@/lib/db";
+import { getServicesCollection, getSettingsCollection } from "@/lib/db";
 
 function generateId(name: string): string {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "item";
@@ -107,4 +107,25 @@ export async function moveSubService(id: string, direction: "up" | "down") {
   [subs[idx], subs[swapIdx]] = [subs[swapIdx], subs[idx]];
   await col.updateOne({ _id: service._id }, { $set: { subServices: subs } });
   refresh();
+}
+
+// ── PIN ────────────────────────────────────────────────────────────────
+
+export async function verifyPin(pin: string): Promise<boolean> {
+  const col = await getSettingsCollection();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const settings = await col.findOne({ _id: "settings" } as any);
+  const correct = settings?.dashboardPin ?? "1337";
+  return pin === correct;
+}
+
+export async function updatePin(newPin: string): Promise<void> {
+  if (!/^\d{4}$/.test(newPin)) return;
+  const col = await getSettingsCollection();
+  await col.updateOne(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { _id: "settings" } as any,
+    { $set: { dashboardPin: newPin } },
+    { upsert: true }
+  );
 }
