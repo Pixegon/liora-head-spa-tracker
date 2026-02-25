@@ -1,0 +1,110 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getServicesCollection } from "@/lib/db";
+
+function generateId(name: string): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "item";
+  return `${slug}-${Date.now().toString(36)}`;
+}
+
+function refresh() {
+  revalidatePath("/dashboard");
+  revalidatePath("/");
+}
+
+// ── Services ──────────────────────────────────────────────────────────
+
+export async function createService(formData: FormData) {
+  const name = (formData.get("name") as string).trim();
+  const tagline = (formData.get("tagline") as string).trim();
+  if (!name) return;
+
+  const col = await getServicesCollection();
+  const last = await col.find({}).sort({ sortOrder: -1 }).limit(1).toArray();
+  const order = last.length ? last[0].sortOrder + 1 : 0;
+
+  await col.insertOne({ _id: generateId(name), name, tagline, sortOrder: order, subServices: [] });
+  refresh();
+}
+
+export async function updateService(id: string, formData: FormData) {
+  const name = (formData.get("name") as string).trim();
+  const tagline = (formData.get("tagline") as string).trim();
+  if (!name) return;
+
+  const col = await getServicesCollection();
+  await col.updateOne({ _id: id }, { $set: { name, tagline } });
+  refresh();
+}
+
+export async function deleteService(id: string) {
+  const col = await getServicesCollection();
+  await col.deleteOne({ _id: id });
+  refresh();
+}
+
+export async function moveService(id: string, direction: "up" | "down") {
+  const col = await getServicesCollection();
+  const all = await col.find({}).sort({ sortOrder: 1 }).toArray();
+  const idx = all.findIndex((s) => s._id === id);
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= all.length) return;
+
+  await col.updateOne({ _id: all[idx]._id }, { $set: { sortOrder: all[swapIdx].sortOrder } });
+  await col.updateOne({ _id: all[swapIdx]._id }, { $set: { sortOrder: all[idx].sortOrder } });
+  refresh();
+}
+
+// ── Sub-services ───────────────────────────────────────────────────────
+
+export async function createSubService(serviceId: string, formData: FormData) {
+  const name = (formData.get("name") as string).trim();
+  const minutes = parseFloat(formData.get("minutes") as string);
+  if (!name || isNaN(minutes) || minutes <= 0) return;
+
+  const col = await getServicesCollection();
+  await col.updateOne(
+    { _id: serviceId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { $push: { subServices: { id: generateId(name), name, durationSeconds: Math.round(minutes * 60) } } } as any
+  );
+  refresh();
+}
+
+export async function updateSubService(id: string, formData: FormData) {
+  const name = (formData.get("name") as string).trim();
+  const minutes = parseFloat(formData.get("minutes") as string);
+  if (!name || isNaN(minutes) || minutes <= 0) return;
+
+  const col = await getServicesCollection();
+  await col.updateOne(
+    { "subServices.id": id } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    { $set: { "subServices.$.name": name, "subServices.$.durationSeconds": Math.round(minutes * 60) } } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+  );
+  refresh();
+}
+
+export async function deleteSubService(id: string) {
+  const col = await getServicesCollection();
+  await col.updateOne(
+    { "subServices.id": id } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    { $pull: { subServices: { id } } } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+  );
+  refresh();
+}
+
+export async function moveSubService(id: string, direction: "up" | "down") {
+  const col = await getServicesCollection();
+  const service = await col.findOne({ "subServices.id": id } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (!service) return;
+
+  const subs = [...service.subServices];
+  const idx = subs.findIndex((ss) => ss.id === id);
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= subs.length) return;
+
+  [subs[idx], subs[swapIdx]] = [subs[swapIdx], subs[idx]];
+  await col.updateOne({ _id: service._id }, { $set: { subServices: subs } });
+  refresh();
+}

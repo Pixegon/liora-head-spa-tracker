@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg:          #FDFAF6;
+  --color-surface:     #F5F0E8;
+  --color-border:      #E8E0D0;
+  --color-text:        #1A1614;
+  --color-muted:       #8C7E72;
+  --color-accent:      #9C6B4E;
+  --color-accent-light:#F0E4D8;
+  --color-ring-track:  #EDE5DC;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+/* Prevent layout shift on digit changes */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
