@@ -44,6 +44,31 @@ export async function deleteService(id: string) {
   refresh();
 }
 
+export async function duplicateService(id: string) {
+  const col = await getServicesCollection();
+  const source = await col.findOne({ _id: id });
+  if (!source) return;
+
+  const last = await col.find({}).sort({ sortOrder: -1 }).limit(1).toArray();
+  const order = last.length ? last[0].sortOrder + 1 : 0;
+  const newName = `${source.name} - copy`;
+
+  const newSubServices = source.subServices.map((ss: { id: string; name: string; durationSeconds: number }) => ({
+    ...ss,
+    id: generateId(ss.name),
+  }));
+
+  await col.insertOne({
+    _id: generateId(newName),
+    name: newName,
+    tagline: source.tagline,
+    sortOrder: order,
+    enabled: source.enabled,
+    subServices: newSubServices,
+  });
+  refresh();
+}
+
 export async function toggleService(id: string) {
   const col = await getServicesCollection();
   const service = await col.findOne({ _id: id });

@@ -6,6 +6,7 @@ import {
   createService,
   updateService,
   deleteService,
+  duplicateService,
   toggleService,
   moveService,
   createSubService,
@@ -351,6 +352,13 @@ export default function DashboardClient({ services }: Props) {
                   onClick={() => run(() => toggleService(service.id))}
                 >
                   {service.enabled ? "Hide" : "Show"}
+                </button>
+                <button
+                  className={btnGhost}
+                  disabled={isPending}
+                  onClick={() => run(() => duplicateService(service.id))}
+                >
+                  Duplicate
                 </button>
                 <button
                   className={btnGhost}
