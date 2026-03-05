@@ -81,7 +81,6 @@ export default function StepOverviewModal({
           {service.subServices.map((step, i) => {
             const isCompleted = i < currentStepIndex;
             const isCurrent = i === currentStepIndex;
-            const isUpcoming = i > currentStepIndex;
 
             return (
               <div
