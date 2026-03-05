@@ -8,6 +8,7 @@ import CountdownDisplay from "@/components/CountdownDisplay";
 import SubServiceLabel from "@/components/SubServiceLabel";
 import StepDots from "@/components/StepDots";
 import SessionControls from "@/components/SessionControls";
+import StepOverviewModal from "@/components/StepOverviewModal";
 
 interface SessionViewProps {
   service: Service;
@@ -16,6 +17,8 @@ interface SessionViewProps {
 export default function SessionView({ service }: SessionViewProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [showOverview, setShowOverview] = useState(false);
+  const [wasRunningOnOpen, setWasRunningOnOpen] = useState(false);
   const [{ currentStepIndex, secondsRemaining, isRunning, isComplete }, controls] =
     useTimer(service.subServices);
 
@@ -55,8 +58,32 @@ export default function SessionView({ service }: SessionViewProps) {
             {service.name}
           </h1>
         </div>
-        <StepDots totalSteps={service.subServices.length} currentStep={currentStepIndex} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { setWasRunningOnOpen(isRunning); controls.pause(); setShowOverview(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-spa-surface border border-spa-border text-spa-muted hover:text-spa-text hover:bg-spa-border transition-colors duration-150 text-xs font-medium tracking-wide"
+            aria-label="Show session overview"
+          >
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="flex-shrink-0">
+              <rect x="0.75" y="0.75" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.25"/>
+              <rect x="7.75" y="0.75" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.25"/>
+              <rect x="0.75" y="7.75" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.25"/>
+              <rect x="7.75" y="7.75" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.25"/>
+            </svg>
+            Overview
+          </button>
+          <StepDots totalSteps={service.subServices.length} currentStep={currentStepIndex} />
+        </div>
       </div>
+
+      {/* Step overview modal */}
+      {showOverview && (
+        <StepOverviewModal
+          service={service}
+          currentStepIndex={currentStepIndex}
+          onClose={() => { setShowOverview(false); if (wasRunningOnOpen) controls.resume(); }}
+        />
+      )}
 
       {/* Timer center */}
       <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full">
