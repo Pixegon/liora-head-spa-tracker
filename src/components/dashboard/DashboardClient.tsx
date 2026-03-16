@@ -218,7 +218,7 @@ function ServicesScreen({ services, categories, isPending, run, onEdit }: Servic
   const toggleCollapse = (key: string) =>
     setCollapsed((prev) => {
       const n = new Set(prev);
-      n.has(key) ? n.delete(key) : n.add(key);
+      if (n.has(key)) { n.delete(key); } else { n.add(key); }
       return n;
     });
 
