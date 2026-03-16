@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { getAllServices } from "@/lib/api";
+import { getAllServices, getCategories } from "@/lib/api";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 import PinGate from "@/components/dashboard/PinGate";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const { services } = await getAllServices();
+  const [{ services }, { categories }] = await Promise.all([getAllServices(), getCategories()]);
 
   return (
     <div className="min-h-screen bg-spa-bg">
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        <DashboardClient services={services} />
+        <DashboardClient services={services} categories={categories} />
       </div>
     </div>
   );

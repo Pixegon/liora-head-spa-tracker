@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServicesCollection, getSettingsCollection } from "@/lib/db";
+import { getServicesCollection, getCategoriesCollection, getSettingsCollection } from "@/lib/db";
 
 function generateId(name: string): string {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "item";
@@ -15,26 +15,43 @@ function refresh() {
 
 // ── Services ──────────────────────────────────────────────────────────
 
-export async function createService(formData: FormData) {
+export async function createService(formData: FormData): Promise<string> {
   const name = (formData.get("name") as string).trim();
   const tagline = (formData.get("tagline") as string).trim();
-  if (!name) return;
+  const categoryId = (formData.get("categoryId") as string | null)?.trim() || undefined;
+  if (!name) return "";
 
   const col = await getServicesCollection();
   const last = await col.find({}).sort({ sortOrder: -1 }).limit(1).toArray();
   const order = last.length ? last[0].sortOrder + 1 : 0;
+  const id = generateId(name);
 
-  await col.insertOne({ _id: generateId(name), name, tagline, sortOrder: order, subServices: [] });
+  await col.insertOne({
+    _id: id,
+    name,
+    tagline,
+    sortOrder: order,
+    subServices: [],
+    ...(categoryId ? { categoryId } : {}),
+  });
   refresh();
+  return id;
 }
 
 export async function updateService(id: string, formData: FormData) {
   const name = (formData.get("name") as string).trim();
   const tagline = (formData.get("tagline") as string).trim();
+  const categoryId = (formData.get("categoryId") as string | null)?.trim() || null;
   if (!name) return;
 
   const col = await getServicesCollection();
-  await col.updateOne({ _id: id }, { $set: { name, tagline } });
+  if (categoryId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await col.updateOne({ _id: id }, { $set: { name, tagline, categoryId } } as any);
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await col.updateOne({ _id: id }, { $set: { name, tagline }, $unset: { categoryId: "" } } as any);
+  }
   refresh();
 }
 
@@ -64,6 +81,7 @@ export async function duplicateService(id: string) {
     tagline: source.tagline,
     sortOrder: order,
     enabled: source.enabled,
+    ...(source.categoryId ? { categoryId: source.categoryId } : {}),
     subServices: newSubServices,
   });
   refresh();
@@ -82,6 +100,70 @@ export async function moveService(id: string, direction: "up" | "down") {
   const col = await getServicesCollection();
   const all = await col.find({}).sort({ sortOrder: 1 }).toArray();
   const idx = all.findIndex((s) => s._id === id);
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= all.length) return;
+
+  await col.updateOne({ _id: all[idx]._id }, { $set: { sortOrder: all[swapIdx].sortOrder } });
+  await col.updateOne({ _id: all[swapIdx]._id }, { $set: { sortOrder: all[idx].sortOrder } });
+  refresh();
+}
+
+export async function moveServiceInGroup(id: string, direction: "up" | "down", categoryId: string | null) {
+  const col = await getServicesCollection();
+  const query = categoryId
+    ? { categoryId }
+    : { $or: [{ categoryId: { $exists: false } }, { categoryId: null }] };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const group = await col.find(query as any).sort({ sortOrder: 1 }).toArray();
+  const idx = group.findIndex((s) => s._id === id);
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= group.length) return;
+
+  await col.updateOne({ _id: group[idx]._id }, { $set: { sortOrder: group[swapIdx].sortOrder } });
+  await col.updateOne({ _id: group[swapIdx]._id }, { $set: { sortOrder: group[idx].sortOrder } });
+  refresh();
+}
+
+// ── Categories ─────────────────────────────────────────────────────────
+
+export async function createCategory(formData: FormData) {
+  const name = (formData.get("name") as string).trim();
+  if (!name) return;
+
+  const col = await getCategoriesCollection();
+  const last = await col.find({}).sort({ sortOrder: -1 }).limit(1).toArray();
+  const order = last.length ? last[0].sortOrder + 1 : 0;
+
+  await col.insertOne({ _id: generateId(name), name, sortOrder: order });
+  refresh();
+}
+
+export async function updateCategory(id: string, formData: FormData) {
+  const name = (formData.get("name") as string).trim();
+  if (!name) return;
+
+  const col = await getCategoriesCollection();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await col.updateOne({ _id: id } as any, { $set: { name } });
+  refresh();
+}
+
+export async function deleteCategory(id: string) {
+  // Unassign services in this category so they become uncategorized
+  const serviceCol = await getServicesCollection();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await serviceCol.updateMany({ categoryId: id } as any, { $unset: { categoryId: "" } } as any);
+
+  const col = await getCategoriesCollection();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await col.deleteOne({ _id: id } as any);
+  refresh();
+}
+
+export async function moveCategory(id: string, direction: "up" | "down") {
+  const col = await getCategoriesCollection();
+  const all = await col.find({}).sort({ sortOrder: 1 }).toArray();
+  const idx = all.findIndex((c) => c._id === id);
   const swapIdx = direction === "up" ? idx - 1 : idx + 1;
   if (idx < 0 || swapIdx < 0 || swapIdx >= all.length) return;
 

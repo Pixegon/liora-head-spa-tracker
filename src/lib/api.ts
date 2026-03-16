@@ -1,6 +1,6 @@
-import { getServicesCollection, ServiceDoc } from "@/lib/db";
+import { getServicesCollection, getCategoriesCollection, ServiceDoc } from "@/lib/db";
 import { SERVICES } from "@/data/services";
-import type { Service, ServicesResponse } from "@/lib/types";
+import type { Service, Category, ServicesResponse } from "@/lib/types";
 
 function docToService(doc: ServiceDoc): Service {
   return {
@@ -13,6 +13,7 @@ function docToService(doc: ServiceDoc): Service {
       name: ss.name,
       durationSeconds: ss.durationSeconds,
     })),
+    ...(doc.categoryId ? { categoryId: doc.categoryId } : {}),
   };
 }
 
@@ -63,4 +64,16 @@ export async function getServiceById(id: string): Promise<Service | null> {
   const doc = await col.findOne({ _id: id });
   if (!doc) return null;
   return docToService(doc);
+}
+
+export async function getCategories(): Promise<{ categories: Category[] }> {
+  const col = await getCategoriesCollection();
+  const docs = await col.find({}).sort({ sortOrder: 1 }).toArray();
+  return {
+    categories: docs.map((doc) => ({
+      id: doc._id,
+      name: doc.name,
+      sortOrder: doc.sortOrder,
+    })),
+  };
 }

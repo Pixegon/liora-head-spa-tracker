@@ -12,7 +12,14 @@ export interface ServiceDoc {
   tagline: string;
   sortOrder: number;
   enabled?: boolean;
+  categoryId?: string;
   subServices: SubServiceDoc[];
+}
+
+export interface CategoryDoc {
+  _id: string;
+  name: string;
+  sortOrder: number;
 }
 
 const uri = process.env.MONGODB_URI!;
@@ -36,6 +43,11 @@ if (process.env.NODE_ENV === "development") {
 export async function getServicesCollection(): Promise<Collection<ServiceDoc>> {
   const client = await clientPromise;
   return client.db("liora").collection<ServiceDoc>("services");
+}
+
+export async function getCategoriesCollection(): Promise<Collection<CategoryDoc>> {
+  const client = await clientPromise;
+  return client.db("liora").collection<CategoryDoc>("categories");
 }
 
 export interface SettingsDoc {

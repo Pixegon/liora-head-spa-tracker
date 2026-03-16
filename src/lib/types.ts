@@ -10,6 +10,13 @@ export interface Service {
   tagline: string;
   totalDurationSeconds: number;
   subServices: SubService[];
+  categoryId?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  sortOrder: number;
 }
 
 export interface ServicesResponse {
