@@ -7,7 +7,6 @@ export interface SubService {
 export interface Service {
   id: string;
   name: string;
-  tagline: string;
   totalDurationSeconds: number;
   subServices: SubService[];
   categoryId?: string;

@@ -54,6 +54,7 @@ function toMinutes(s: number) {
 
 interface SubRowProps {
   sub: SubService;
+  runningTotalSeconds: number;
   isFirst: boolean;
   isLast: boolean;
   isPending: boolean;
@@ -62,7 +63,7 @@ interface SubRowProps {
   onMove: (dir: "up" | "down") => void;
 }
 
-function SubRow({ sub, isFirst, isLast, isPending, onEdit, onDelete, onMove }: SubRowProps) {
+function SubRow({ sub, runningTotalSeconds, isFirst, isLast, isPending, onEdit, onDelete, onMove }: SubRowProps) {
   return (
     <div className="flex items-center gap-2 py-3 px-4 hover:bg-spa-surface group transition-colors">
       <div className="flex flex-col gap-0.5 shrink-0">
@@ -72,6 +73,9 @@ function SubRow({ sub, isFirst, isLast, isPending, onEdit, onDelete, onMove }: S
       <span className="flex-1 text-sm text-spa-text leading-snug">{sub.name}</span>
       <span className="text-sm text-spa-muted tabular-nums shrink-0 w-14 text-right">
         {toMinutes(sub.durationSeconds)} min
+      </span>
+      <span className="text-xs text-spa-muted tabular-nums shrink-0 w-16 text-right">
+        @ {toMinutes(runningTotalSeconds)} min
       </span>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
         <button className={btnGhost} disabled={isPending} onClick={onEdit}>Edit</button>
@@ -249,14 +253,11 @@ function ServicesScreen({ services, categories, isPending, run, onEdit }: Servic
           <span className="font-medium text-spa-text group-hover:text-spa-accent transition-colors">
             {service.name}
           </span>
-          {service.tagline && (
-            <span className="text-spa-muted text-sm ml-2 hidden sm:inline">{service.tagline}</span>
-          )}
         </button>
 
-        {/* Step count */}
+        {/* Step count + total time */}
         <span className="text-xs text-spa-muted tabular-nums shrink-0">
-          {service.subServices.length} {service.subServices.length === 1 ? "step" : "steps"}
+          {service.subServices.length} {service.subServices.length === 1 ? "step" : "steps"} · {toMinutes(service.totalDurationSeconds)} min
         </span>
 
         {/* Enabled badge */}
@@ -359,10 +360,6 @@ function ServicesScreen({ services, categories, isPending, run, onEdit }: Servic
                 <label className="block text-xs font-medium text-spa-muted mb-1.5 uppercase tracking-wide">Name</label>
                 <input name="name" placeholder="e.g. Liora Signature" required autoFocus className={`${inputCls} w-full`} />
               </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-spa-muted mb-1.5 uppercase tracking-wide">Tagline</label>
-                <input name="tagline" placeholder="e.g. 60 min · Full ritual" className={`${inputCls} w-full`} />
-              </div>
               {categories.length > 0 && (
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-spa-muted mb-1.5 uppercase tracking-wide">Category</label>
@@ -436,7 +433,7 @@ function ServiceEditScreen({ service, categories, isPending, run, onBack, onDele
 
       {/* Metadata form — key forces re-mount when server returns updated data */}
       <div
-        key={`${service.name}|${service.tagline}|${service.categoryId}|${service.enabled}`}
+        key={`${service.name}|${service.categoryId}|${service.enabled}`}
         className="rounded-2xl border border-spa-border bg-white p-5 space-y-4"
       >
         <form
@@ -450,10 +447,6 @@ function ServiceEditScreen({ service, categories, isPending, run, onBack, onDele
             <div className="flex-1">
               <label className="block text-xs font-medium text-spa-muted mb-1.5 uppercase tracking-wide">Name</label>
               <input name="name" defaultValue={service.name} required className={`${inputCls} w-full`} />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-spa-muted mb-1.5 uppercase tracking-wide">Tagline</label>
-              <input name="tagline" defaultValue={service.tagline} className={`${inputCls} w-full`} />
             </div>
             {categories.length > 0 && (
               <div className="flex-1">
@@ -485,38 +478,50 @@ function ServiceEditScreen({ service, categories, isPending, run, onBack, onDele
 
       {/* Steps */}
       <div>
-        <h3 className="text-xs font-semibold text-spa-muted uppercase tracking-widest mb-3">Steps</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-spa-muted uppercase tracking-widest">Steps</h3>
+          {service.subServices.length > 0 && (
+            <span className="text-xs font-semibold text-spa-muted tabular-nums">
+              Total: {toMinutes(service.totalDurationSeconds)} min
+            </span>
+          )}
+        </div>
         <div className="rounded-2xl border border-spa-border bg-white overflow-hidden">
           {service.subServices.length === 0 && !showAddStep && (
             <p className="text-sm text-spa-muted px-4 py-4 italic">No steps yet.</p>
           )}
 
           <div className="divide-y divide-spa-border">
-            {service.subServices.map((sub, subIdx) =>
-              editingSubId === sub.id ? (
-                <div key={sub.id}>
-                  <SubForm
-                    defaultName={sub.name}
-                    defaultMinutes={toMinutes(sub.durationSeconds)}
-                    submitLabel="Save"
+            {(() => {
+              let runningTotal = 0;
+              return service.subServices.map((sub, subIdx) => {
+                runningTotal += sub.durationSeconds;
+                return editingSubId === sub.id ? (
+                  <div key={sub.id}>
+                    <SubForm
+                      defaultName={sub.name}
+                      defaultMinutes={toMinutes(sub.durationSeconds)}
+                      submitLabel="Save"
+                      isPending={isPending}
+                      onCancel={() => setEditingSubId(null)}
+                      onSubmit={(fd) => run(async () => { await updateSubService(sub.id, fd); setEditingSubId(null); })}
+                    />
+                  </div>
+                ) : (
+                  <SubRow
+                    key={sub.id}
+                    sub={sub}
+                    runningTotalSeconds={runningTotal}
+                    isFirst={subIdx === 0}
+                    isLast={subIdx === service.subServices.length - 1}
                     isPending={isPending}
-                    onCancel={() => setEditingSubId(null)}
-                    onSubmit={(fd) => run(async () => { await updateSubService(sub.id, fd); setEditingSubId(null); })}
+                    onEdit={() => { setShowAddStep(false); setEditingSubId(sub.id); }}
+                    onDelete={() => { if (!confirm(`Delete step "${sub.name}"?`)) return; run(() => deleteSubService(sub.id)); }}
+                    onMove={(dir) => run(() => moveSubService(sub.id, dir))}
                   />
-                </div>
-              ) : (
-                <SubRow
-                  key={sub.id}
-                  sub={sub}
-                  isFirst={subIdx === 0}
-                  isLast={subIdx === service.subServices.length - 1}
-                  isPending={isPending}
-                  onEdit={() => { setShowAddStep(false); setEditingSubId(sub.id); }}
-                  onDelete={() => { if (!confirm(`Delete step "${sub.name}"?`)) return; run(() => deleteSubService(sub.id)); }}
-                  onMove={(dir) => run(() => moveSubService(sub.id, dir))}
-                />
-              )
-            )}
+                );
+              });
+            })()}
           </div>
 
           <div className={service.subServices.length > 0 ? "border-t border-spa-border" : ""}>

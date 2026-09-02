@@ -22,8 +22,7 @@ export default function ServiceCard({ service, onSelect }: ServiceCardProps) {
       <span className="text-xl font-semibold leading-tight text-spa-text">
         {service.name}
       </span>
-      <div className="flex items-center justify-between mt-4">
-        <span className="text-sm text-spa-muted">{service.tagline}</span>
+      <div className="flex items-center justify-end mt-4">
         <span className="text-sm font-medium tabular-nums text-spa-muted">
           {formatMinutes(service.totalDurationSeconds)}
         </span>

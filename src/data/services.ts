@@ -4,7 +4,6 @@ export const SERVICES: Service[] = [
   {
     id: "liora-signature",
     name: "Liora Signature",
-    tagline: "75 min · Full ritual",
     totalDurationSeconds: 4500,
     subServices: [
       { id: "scalp-consult",  name: "Scalp Consultation & Oil Application", durationSeconds: 300  },
@@ -18,7 +17,6 @@ export const SERVICES: Service[] = [
   {
     id: "express-refresh",
     name: "Express Refresh",
-    tagline: "30 min · Quick reset",
     totalDurationSeconds: 1800,
     subServices: [
       { id: "express-oil",     name: "Oil Selection & Application", durationSeconds: 300 },
@@ -29,7 +27,6 @@ export const SERVICES: Service[] = [
   {
     id: "deep-relaxation",
     name: "Deep Relaxation",
-    tagline: "60 min · Melt away tension",
     totalDurationSeconds: 3600,
     subServices: [
       { id: "relax-breathwork", name: "Grounding Breathwork",                durationSeconds: 300  },
@@ -42,7 +39,6 @@ export const SERVICES: Service[] = [
   {
     id: "scalp-recovery",
     name: "Scalp Recovery",
-    tagline: "45 min · Targeted repair",
     totalDurationSeconds: 2700,
     subServices: [
       { id: "recovery-assess",  name: "Scalp Health Assessment",      durationSeconds: 300 },
@@ -55,7 +51,6 @@ export const SERVICES: Service[] = [
   {
     id: "premium-indulgence",
     name: "Premium Indulgence",
-    tagline: "90 min · The full experience",
     totalDurationSeconds: 5400,
     subServices: [
       { id: "prem-consult", name: "Skin & Scalp Consultation",         durationSeconds: 300  },

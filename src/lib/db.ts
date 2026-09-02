@@ -9,7 +9,6 @@ export interface SubServiceDoc {
 export interface ServiceDoc {
   _id: string;
   name: string;
-  tagline: string;
   sortOrder: number;
   enabled?: boolean;
   categoryId?: string;

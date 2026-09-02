@@ -17,7 +17,6 @@ function refresh() {
 
 export async function createService(formData: FormData): Promise<string> {
   const name = (formData.get("name") as string).trim();
-  const tagline = (formData.get("tagline") as string).trim();
   const categoryId = (formData.get("categoryId") as string | null)?.trim() || undefined;
   if (!name) return "";
 
@@ -29,7 +28,6 @@ export async function createService(formData: FormData): Promise<string> {
   await col.insertOne({
     _id: id,
     name,
-    tagline,
     sortOrder: order,
     subServices: [],
     ...(categoryId ? { categoryId } : {}),
@@ -40,17 +38,16 @@ export async function createService(formData: FormData): Promise<string> {
 
 export async function updateService(id: string, formData: FormData) {
   const name = (formData.get("name") as string).trim();
-  const tagline = (formData.get("tagline") as string).trim();
   const categoryId = (formData.get("categoryId") as string | null)?.trim() || null;
   if (!name) return;
 
   const col = await getServicesCollection();
   if (categoryId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await col.updateOne({ _id: id }, { $set: { name, tagline, categoryId } } as any);
+    await col.updateOne({ _id: id }, { $set: { name, categoryId } } as any);
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await col.updateOne({ _id: id }, { $set: { name, tagline }, $unset: { categoryId: "" } } as any);
+    await col.updateOne({ _id: id }, { $set: { name }, $unset: { categoryId: "" } } as any);
   }
   refresh();
 }
@@ -78,7 +75,6 @@ export async function duplicateService(id: string) {
   await col.insertOne({
     _id: generateId(newName),
     name: newName,
-    tagline: source.tagline,
     sortOrder: order,
     enabled: source.enabled,
     ...(source.categoryId ? { categoryId: source.categoryId } : {}),

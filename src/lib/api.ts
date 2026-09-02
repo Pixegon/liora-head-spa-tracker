@@ -6,7 +6,6 @@ function docToService(doc: ServiceDoc): Service {
   return {
     id: doc._id,
     name: doc.name,
-    tagline: doc.tagline,
     totalDurationSeconds: doc.subServices.reduce((sum, ss) => sum + ss.durationSeconds, 0),
     subServices: doc.subServices.map((ss) => ({
       id: ss.id,
@@ -25,7 +24,6 @@ async function ensureSeeded() {
   const docs = SERVICES.map((s, i) => ({
     _id: s.id,
     name: s.name,
-    tagline: s.tagline,
     sortOrder: i,
     subServices: s.subServices.map((ss) => ({
       id: ss.id,
