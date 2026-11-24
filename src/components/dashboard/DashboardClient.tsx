@@ -14,6 +14,7 @@ import {
   updateSubService,
   deleteSubService,
   moveSubService,
+  reorderSubServices,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -59,14 +60,54 @@ interface SubRowProps {
   isFirst: boolean;
   isLast: boolean;
   isPending: boolean;
+  isDropTarget: boolean;
+  draggable: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onMove: (dir: "up" | "down") => void;
+  onDragStart: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
 }
 
-function SubRow({ sub, runningTotalSeconds, isFirst, isLast, isPending, onEdit, onDelete, onMove }: SubRowProps) {
+function SubRow({
+  sub,
+  runningTotalSeconds,
+  isFirst,
+  isLast,
+  isPending,
+  isDropTarget,
+  draggable,
+  onEdit,
+  onDelete,
+  onMove,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: SubRowProps) {
   return (
-    <div className="flex items-center gap-2 py-3 px-4 hover:bg-spa-surface group transition-colors">
+    <div
+      className={`flex items-center gap-2 py-3 px-4 hover:bg-spa-surface group transition-colors${
+        isDropTarget ? " border-t-2 border-spa-accent" : ""
+      }`}
+      onDragOver={(e) => { e.preventDefault(); onDragOver(); }}
+      onDrop={(e) => { e.preventDefault(); onDrop(); }}
+    >
+      <span
+        draggable={draggable}
+        onDragStart={(e) => { if (!draggable) { e.preventDefault(); return; } onDragStart(); e.dataTransfer.effectAllowed = "move"; }}
+        onDragEnd={onDragEnd}
+        className="cursor-grab text-spa-muted hover:text-spa-text transition-colors shrink-0 px-0.5"
+        title="Drag to reorder"
+      >
+        <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+          <circle cx="2" cy="2" r="1.3" /><circle cx="8" cy="2" r="1.3" />
+          <circle cx="2" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" />
+          <circle cx="2" cy="14" r="1.3" /><circle cx="8" cy="14" r="1.3" />
+        </svg>
+      </span>
       <div className="flex flex-col gap-0.5 shrink-0">
         <button className={btnArrow} disabled={isFirst || isPending} onClick={() => onMove("up")}>↑</button>
         <button className={btnArrow} disabled={isLast || isPending} onClick={() => onMove("down")}>↓</button>
@@ -434,6 +475,8 @@ interface ServiceEditScreenProps {
 function ServiceEditScreen({ service, categories, isPending, run, onBack, onDeleted }: ServiceEditScreenProps) {
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [showAddStep, setShowAddStep] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -550,9 +593,25 @@ function ServiceEditScreen({ service, categories, isPending, run, onBack, onDele
                     isFirst={subIdx === 0}
                     isLast={subIdx === service.subServices.length - 1}
                     isPending={isPending}
+                    isDropTarget={overId === sub.id && dragId !== null && dragId !== sub.id}
+                    draggable={!isPending}
                     onEdit={() => { setShowAddStep(false); setEditingSubId(sub.id); }}
                     onDelete={() => { if (!confirm(`Delete step "${sub.name}"?`)) return; run(() => deleteSubService(sub.id)); }}
                     onMove={(dir) => run(() => moveSubService(sub.id, dir))}
+                    onDragStart={() => setDragId(sub.id)}
+                    onDragEnd={() => { setDragId(null); setOverId(null); }}
+                    onDragOver={() => { if (dragId && dragId !== sub.id) setOverId(sub.id); }}
+                    onDrop={() => {
+                      if (!dragId || dragId === sub.id) { setDragId(null); setOverId(null); return; }
+                      const ids = service.subServices.map((s) => s.id);
+                      const from = ids.indexOf(dragId);
+                      const to = ids.indexOf(sub.id);
+                      setDragId(null);
+                      setOverId(null);
+                      if (from === -1 || to === -1 || from === to) return;
+                      ids.splice(to, 0, ids.splice(from, 1)[0]);
+                      run(() => reorderSubServices(service.id, ids));
+                    }}
                   />
                 );
               });
