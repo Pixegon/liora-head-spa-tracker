@@ -120,6 +120,26 @@ export async function moveServiceInGroup(id: string, direction: "up" | "down", c
   refresh();
 }
 
+export async function reorderServicesInGroup(categoryId: string | null, orderedIds: string[]) {
+  const col = await getServicesCollection();
+  const query = categoryId
+    ? { categoryId }
+    : { $or: [{ categoryId: { $exists: false } }, { categoryId: null }] };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const group = await col.find(query as any).toArray();
+  const groupIds = new Set(group.map((s) => s._id));
+
+  const ops = orderedIds
+    .filter((id) => groupIds.has(id))
+    .map((id, index) => ({
+      updateOne: { filter: { _id: id }, update: { $set: { sortOrder: index } } },
+    }));
+  if (ops.length === 0) return;
+
+  await col.bulkWrite(ops);
+  refresh();
+}
+
 // ── Categories ─────────────────────────────────────────────────────────
 
 export async function createCategory(formData: FormData) {
