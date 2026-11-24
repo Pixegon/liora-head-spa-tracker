@@ -9,6 +9,7 @@ import {
   duplicateService,
   toggleService,
   moveServiceInGroup,
+  reorderServicesInGroup,
   createSubService,
   updateSubService,
   deleteSubService,
@@ -214,6 +215,8 @@ interface ServicesScreenProps {
 function ServicesScreen({ services, categories, isPending, run, onEdit }: ServicesScreenProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   const [isPendingCreate, startCreate] = useTransition();
 
   const hasCats = categories.length > 0;
@@ -232,13 +235,45 @@ function ServicesScreen({ services, categories, isPending, run, onEdit }: Servic
     categoryId: string | null,
   ) {
     const idx = group.findIndex((s) => s.id === service.id);
+    const isDropTarget = overId === service.id && dragId !== null && dragId !== service.id;
     return (
       <div
         key={service.id}
         className={`flex items-center gap-3 px-4 py-3 border-b border-spa-border last:border-0 hover:bg-spa-surface transition-colors group ${
           !service.enabled ? "opacity-50" : ""
-        }`}
+        }${isDropTarget ? " border-t-2 border-spa-accent" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (dragId && dragId !== service.id) setOverId(service.id);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (!dragId || dragId === service.id) { setDragId(null); setOverId(null); return; }
+          const ids = group.map((s) => s.id);
+          const from = ids.indexOf(dragId);
+          const to = ids.indexOf(service.id);
+          setDragId(null);
+          setOverId(null);
+          if (from === -1 || to === -1 || from === to) return;
+          ids.splice(to, 0, ids.splice(from, 1)[0]);
+          run(() => reorderServicesInGroup(categoryId, ids));
+        }}
       >
+        {/* Drag handle */}
+        <span
+          draggable={!isPending}
+          onDragStart={(e) => { if (isPending) { e.preventDefault(); return; } setDragId(service.id); e.dataTransfer.effectAllowed = "move"; }}
+          onDragEnd={() => { setDragId(null); setOverId(null); }}
+          className="cursor-grab text-spa-muted hover:text-spa-text transition-colors shrink-0 px-0.5"
+          title="Drag to reorder"
+        >
+          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+            <circle cx="2" cy="2" r="1.3" /><circle cx="8" cy="2" r="1.3" />
+            <circle cx="2" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" />
+            <circle cx="2" cy="14" r="1.3" /><circle cx="8" cy="14" r="1.3" />
+          </svg>
+        </span>
+
         {/* Reorder arrows */}
         <div className="flex flex-col gap-0.5 shrink-0">
           <button className={btnArrow} disabled={idx === 0 || isPending} onClick={() => run(() => moveServiceInGroup(service.id, "up", categoryId))}>↑</button>
