@@ -60,7 +60,7 @@ interface SubRowProps {
   isFirst: boolean;
   isLast: boolean;
   isPending: boolean;
-  isDropTarget: boolean;
+  dropEdge: "top" | "bottom" | null;
   draggable: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -77,7 +77,7 @@ function SubRow({
   isFirst,
   isLast,
   isPending,
-  isDropTarget,
+  dropEdge,
   draggable,
   onEdit,
   onDelete,
@@ -90,14 +90,14 @@ function SubRow({
   return (
     <div
       className={`flex items-center gap-2 py-3 px-4 hover:bg-spa-surface group transition-colors${
-        isDropTarget ? " border-t-2 border-spa-accent" : ""
-      }`}
+        dropEdge === "top" ? " shadow-[inset_0_2px_0_0_rgb(var(--color-accent))]" : ""
+      }${dropEdge === "bottom" ? " shadow-[inset_0_-2px_0_0_rgb(var(--color-accent))]" : ""}`}
       onDragOver={(e) => { e.preventDefault(); onDragOver(); }}
       onDrop={(e) => { e.preventDefault(); onDrop(); }}
     >
       <span
         draggable={draggable}
-        onDragStart={(e) => { if (!draggable) { e.preventDefault(); return; } onDragStart(); e.dataTransfer.effectAllowed = "move"; }}
+        onDragStart={(e) => { if (!draggable) { e.preventDefault(); return; } onDragStart(); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", sub.id); }}
         onDragEnd={onDragEnd}
         className="cursor-grab text-spa-muted hover:text-spa-text transition-colors shrink-0 px-0.5"
         title="Drag to reorder"
@@ -276,13 +276,19 @@ function ServicesScreen({ services, categories, isPending, run, onEdit }: Servic
     categoryId: string | null,
   ) {
     const idx = group.findIndex((s) => s.id === service.id);
-    const isDropTarget = overId === service.id && dragId !== null && dragId !== service.id;
+    const dragIdx = dragId ? group.findIndex((s) => s.id === dragId) : -1;
+    const dropEdge: "top" | "bottom" | null =
+      overId === service.id && dragId !== null && dragId !== service.id
+        ? (dragIdx < idx ? "bottom" : "top")
+        : null;
     return (
       <div
         key={service.id}
         className={`flex items-center gap-3 px-4 py-3 border-b border-spa-border last:border-0 hover:bg-spa-surface transition-colors group ${
           !service.enabled ? "opacity-50" : ""
-        }${isDropTarget ? " border-t-2 border-spa-accent" : ""}`}
+        }${dropEdge === "top" ? " shadow-[inset_0_2px_0_0_rgb(var(--color-accent))]" : ""}${
+          dropEdge === "bottom" ? " shadow-[inset_0_-2px_0_0_rgb(var(--color-accent))]" : ""
+        }`}
         onDragOver={(e) => {
           e.preventDefault();
           if (dragId && dragId !== service.id) setOverId(service.id);
@@ -303,7 +309,7 @@ function ServicesScreen({ services, categories, isPending, run, onEdit }: Servic
         {/* Drag handle */}
         <span
           draggable={!isPending}
-          onDragStart={(e) => { if (isPending) { e.preventDefault(); return; } setDragId(service.id); e.dataTransfer.effectAllowed = "move"; }}
+          onDragStart={(e) => { if (isPending) { e.preventDefault(); return; } setDragId(service.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", service.id); }}
           onDragEnd={() => { setDragId(null); setOverId(null); }}
           className="cursor-grab text-spa-muted hover:text-spa-text transition-colors shrink-0 px-0.5"
           title="Drag to reorder"
@@ -593,7 +599,11 @@ function ServiceEditScreen({ service, categories, isPending, run, onBack, onDele
                     isFirst={subIdx === 0}
                     isLast={subIdx === service.subServices.length - 1}
                     isPending={isPending}
-                    isDropTarget={overId === sub.id && dragId !== null && dragId !== sub.id}
+                    dropEdge={
+                      overId === sub.id && dragId !== null && dragId !== sub.id
+                        ? (service.subServices.findIndex((s) => s.id === dragId) < subIdx ? "bottom" : "top")
+                        : null
+                    }
                     draggable={!isPending}
                     onEdit={() => { setShowAddStep(false); setEditingSubId(sub.id); }}
                     onDelete={() => { if (!confirm(`Delete step "${sub.name}"?`)) return; run(() => deleteSubService(sub.id)); }}

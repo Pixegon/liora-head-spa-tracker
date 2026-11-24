@@ -129,11 +129,20 @@ export async function reorderServicesInGroup(categoryId: string | null, orderedI
   const group = await col.find(query as any).toArray();
   const groupIds = new Set(group.map((s) => s._id));
 
-  const ops = orderedIds
-    .filter((id) => groupIds.has(id))
-    .map((id, index) => ({
-      updateOne: { filter: { _id: id }, update: { $set: { sortOrder: index } } },
-    }));
+  // Reuse the group's own existing sortOrder values as slots, rather than
+  // handing out fresh 0..n-1 indices — those could collide with another
+  // group's values once a service changes category (updateService keeps its
+  // old sortOrder), breaking moveServiceInGroup's swap (equal values = no-op).
+  const slots = group.map((s) => s.sortOrder).sort((a, b) => a - b);
+  const listed = Array.from(new Set(orderedIds)).filter((id) => groupIds.has(id));
+  const rest = group
+    .filter((s) => !listed.includes(s._id))
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((s) => s._id);
+
+  const ops = [...listed, ...rest].map((id, index) => ({
+    updateOne: { filter: { _id: id }, update: { $set: { sortOrder: slots[index] } } },
+  }));
   if (ops.length === 0) return;
 
   await col.bulkWrite(ops);
