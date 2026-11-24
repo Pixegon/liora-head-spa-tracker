@@ -241,6 +241,19 @@ export async function moveSubService(id: string, direction: "up" | "down") {
   refresh();
 }
 
+export async function reorderSubServices(serviceId: string, orderedIds: string[]) {
+  const col = await getServicesCollection();
+  const service = await col.findOne({ _id: serviceId });
+  if (!service) return;
+
+  const byId = new Map(service.subServices.map((ss) => [ss.id, ss]));
+  const reordered = orderedIds.map((id) => byId.get(id)).filter((ss): ss is typeof service.subServices[number] => !!ss);
+  if (reordered.length !== service.subServices.length) return;
+
+  await col.updateOne({ _id: serviceId }, { $set: { subServices: reordered } });
+  refresh();
+}
+
 // ── PIN ────────────────────────────────────────────────────────────────
 
 export async function verifyPin(pin: string): Promise<boolean> {
